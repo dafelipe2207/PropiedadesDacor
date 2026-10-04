@@ -78,3 +78,29 @@ join unidades u on u.id = c.unidad_id
 join propiedades p on p.id = u.propiedad_id;
 
 grant select on v_cobros, v_pagos to authenticated;
+
+create view v_entregas with (security_invoker = true) as
+select e.id, e.propietario_id, pr.nombre as propietario, pr.telefono, e.fecha, e.valor, e.estado, e.comentario,
+       e.respondida_en, e.creado_en, nombre_usuario(e.registrada_por) as registrada_por_nombre,
+       (select count(*) from entrega_pagos ep where ep.entrega_id = e.id) as recibos
+from entregas e
+join propietarios pr on pr.id = e.propietario_id;
+
+grant select on v_entregas to authenticated;
+
+-- Detalle de un servicio cobrado (lecturas, consumo, valor y tarifa) para quien puede ver el contrato.
+create function detalle_servicio_cobrado(p_factura uuid)
+returns table (unidad text, subcontador text, anterior numeric, lectura numeric, consumo numeric, valor bigint, tarifa numeric)
+language sql stable security definer set search_path = public as $$
+  select u.identificador, sc.identificador,
+         case when l.cambio_contador then l.lectura_inicial_nuevo else lectura_anterior(sc.id, f.periodo) end,
+         l.lectura, d.consumo, d.valor,
+         case when f.consumo_principal > 0 then round(f.valor::numeric / f.consumo_principal, 2) end
+  from distribucion_servicio d
+  join facturas_servicio f on f.id = d.factura_id
+  join unidades u on u.id = d.unidad_id
+  left join subcontadores sc on sc.servicio_id = f.servicio_id and sc.unidad_id = d.unidad_id
+  left join lecturas l on l.subcontador_id = sc.id and l.periodo = f.periodo
+  where d.factura_id = p_factura and d.contrato_id is not null and contrato_visible(d.contrato_id)
+  order by u.identificador
+$$;

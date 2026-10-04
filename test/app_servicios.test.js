@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { prepararApp } from './apoyo/app.js';
+import { prepararApp, entrarComo } from './apoyo/app.js';
+import * as K from '../services/cobros.js';
 import * as P from '../services/propiedades.js';
 import * as Pe from '../services/personas.js';
 import * as C from '../services/contratos.js';
 import * as S from '../services/servicios.js';
 
 async function escenario() {
-  await prepararApp();
+  const { cliente } = await prepararApp();
   const dueno = await Pe.crearPersona('propietarios', { nombre: 'Dueño' });
   const prop = await P.crearPropiedad({ nombre: 'Edificio', propietario_id: dueno.id });
   const apto = await P.crearUnidad({ propiedad_id: prop.id, tipo: 'apartamento', identificador: 'Apto 201', canon: 1200000 });
@@ -21,7 +22,7 @@ async function escenario() {
   for (const [u, id] of [[apto, 'SC-201'], [est, 'SC-301'], [loc, 'SC-L1']]) {
     await S.crearSubcontador({ servicio_id: energia.id, unidad_id: u.id, identificador: id, lectura_inicial: 1000 });
   }
-  return { prop, apto, est, loc, energia };
+  return { cliente, prop, apto, est, loc, energia, i1 };
 }
 
 test('flujo de servicio compartido con el ejemplo de la spec', async () => {
@@ -72,4 +73,17 @@ test('lectura menor muestra el error en español', async () => {
   await S.guardarLectura({ subcontador_id: l.subcontador_id, periodo: '2026-10', lectura: 40, cambio_contador: true, lectura_inicial_nuevo: 0 });
   const [l2] = await S.lecturasDelPeriodo(e.energia.id, '2026-10');
   assert.equal(l2.consumo, 40);
+});
+
+test('el inquilino ve el detalle de su servicio con lecturas', async () => {
+  const e = await escenario();
+  const f = await S.guardarFactura({ servicio_id: e.energia.id, periodo: '2026-10', valor: 600000, consumo_principal: 1000 });
+  const ls = await S.lecturasDelPeriodo(e.energia.id, '2026-10');
+  for (const [l, v] of ls.map((l, i) => [l, [1300, 1000, 1550][i]])) await S.guardarLectura({ subcontador_id: l.subcontador_id, periodo: '2026-10', lectura: v });
+  await S.cerrarServicio(f.id);
+  await K.generarCobros('2026-10');
+  await e.cliente.registrarUsuario('ana@p.co', 'clave1234', { rol: 'inquilino', inquilino_id: e.i1.id });
+  await entrarComo(e.cliente, 'ana@p.co');
+  const d = await S.detalleServicioCobrado(f.id);
+  assert.deepEqual(d.map((x) => [x.unidad, x.anterior, x.lectura, x.consumo, x.valor, x.tarifa]), [['Apto 201', 1000, 1300, 300, 180000, 600]]);
 });

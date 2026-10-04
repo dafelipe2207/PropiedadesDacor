@@ -72,3 +72,8 @@ export async function urlArchivo(ruta) {
   const r = await q(db().storage.from('soportes').createSignedUrl(ruta, 3600));
   return r.signedUrl;
 }
+
+export const detalleServicioCobrado = (facturaId) => rpc('detalle_servicio_cobrado', { p_factura: facturaId });
+
+export const obtenerFacturas = (ids) =>
+  ids.length ? q(db().from('facturas_servicio').select('*').in('id', ids)) : Promise.resolve([]);
