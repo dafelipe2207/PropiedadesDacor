@@ -2,7 +2,7 @@
 import * as R from '../services/reportes.js';
 import * as S from '../services/servicios.js';
 import { esc, formatoPesos, formatoFecha, nombrePeriodo, TIPOS_UNIDAD } from '../lib/formato.js';
-import { modal, vacio, error } from '../lib/ui.js';
+import { modal, vacio, error, abrirEnPestana } from '../lib/ui.js';
 
 const ESTADOS = { pendiente: ['Pendiente', 'alerta'], parcial: ['Abonado', 'alerta'], pagado: ['Pagado', ''] };
 
@@ -45,7 +45,7 @@ export async function render(el) {
         </dl></div>
         ${factura.archivo ? '<button type="button" id="ver-factura" class="boton-secundario">Ver factura</button>' : ''}`);
       const b = m.el.querySelector('#ver-factura');
-      if (b) b.onclick = async () => { try { window.open(await S.urlArchivo(factura.archivo), '_blank'); } catch (e) { error(e); } };
+      if (b) b.onclick = () => { abrirEnPestana(() => S.urlArchivo(factura.archivo)).catch(error); };
     } catch (e) { error(e); }
   });
 }

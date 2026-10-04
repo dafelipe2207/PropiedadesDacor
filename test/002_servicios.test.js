@@ -127,3 +127,11 @@ test('servicio individual exige unidad', async () => {
   const d = await datosBase(db);
   await assert.rejects(db.query(`insert into servicios(propiedad_id, tipo, modalidad) values ($1,'agua','individual')`, [d.propiedad]));
 });
+
+test('una lectura mayor que la del periodo siguiente se rechaza', async () => {
+  const db = await nuevaDb();
+  const d = await energiaCompartida(db);
+  await lectura(db, d.sApto, '2026-10', 1100);
+  await lectura(db, d.sApto, '2026-11', 1200);
+  await assert.rejects(db.query(`update lecturas set lectura = 1250 where subcontador_id=$1 and periodo='2026-10'`, [d.sApto]), /mayor que la del periodo siguiente/);
+});

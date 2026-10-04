@@ -32,3 +32,21 @@ test('periodoSiguiente', () => {
   assert.equal(periodoSiguiente('2026-12', -1), '2026-11');
   assert.equal(periodoSiguiente('2026-01', -1), '2025-12');
 });
+
+import { leerNumero } from '../lib/formato.js';
+
+test('leerNumero: pesos enteros con puntos de miles', () => {
+  assert.equal(leerNumero('1.250.000'), 1250000);
+  assert.equal(leerNumero('85300'), 85300);
+  assert.ok(Number.isNaN(leerNumero('1250000,50')));
+  assert.ok(Number.isNaN(leerNumero('abc')));
+});
+
+test('leerNumero: lecturas con decimales ida y vuelta', () => {
+  assert.equal(leerNumero('1520,7', 'decimal'), 1520.7);
+  assert.equal(leerNumero('1520.7', 'decimal'), 1520.7);
+  assert.equal(leerNumero(String(1520.7), 'decimal'), 1520.7);
+  assert.equal(leerNumero('1.520,75', 'decimal'), 1520.75);
+  assert.equal(leerNumero('12.500', 'decimal'), 12500);
+  assert.equal(leerNumero('1000', 'decimal'), 1000);
+});

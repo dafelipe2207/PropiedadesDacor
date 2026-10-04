@@ -70,3 +70,23 @@ test('periodo inválido se rechaza', async () => {
   const db = await nuevaDb();
   await assert.rejects(db.query(`select generar_cobros('2026-13')`), /Periodo inválido/);
 });
+
+test('terminar el contrato después de generar recalcula el arriendo de ese mes y de los siguientes', async () => {
+  const db = await nuevaDb();
+  const d = await datosBase(db);
+  const c = await crearContrato(db, { unidad: d.apto, inquilino: d.inq1, inicio: '2026-09-01' });
+  await db.query(`select generar_cobros('2026-10')`);
+  await db.query(`select generar_cobros('2026-11')`);
+  await db.query(`update contratos set estado='terminado', fecha_fin='2026-10-15' where id=$1`, [c]);
+  assert.equal((await cobro(db, c, '2026-10')).total, 600000);
+  assert.equal((await cobro(db, c, '2026-11')).total, 0);
+  assert.equal((await cobro(db, c, '2026-11')).estado, 'pagado');
+});
+
+test('la fecha límite nunca es anterior al inicio del contrato', async () => {
+  const db = await nuevaDb();
+  const d = await datosBase(db);
+  const c = await crearContrato(db, { unidad: d.apto, inquilino: d.inq1, inicio: '2026-10-16', dia_pago: 5 });
+  await db.query(`select generar_cobros('2026-10')`);
+  assert.equal((await cobro(db, c, '2026-10')).fecha_limite, '2026-10-16');
+});

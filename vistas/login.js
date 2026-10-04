@@ -45,10 +45,10 @@ function renderRecuperar(el, alEntrar) {
   el.querySelector('#volver').onclick = (ev) => { ev.preventDefault(); renderIngreso(el, alEntrar); };
 }
 
-export function renderNuevaContrasena(el, alTerminar) {
+export function renderNuevaContrasena(el, alTerminar, tipo = 'recovery') {
   el.innerHTML = `
     <div class="ingreso">
-      <h1>Nueva contraseña</h1>
+      <h1>${tipo === 'invite' ? 'Bienvenido: cree su contraseña' : 'Nueva contraseña'}</h1>
       <div class="tarjeta">
         <form id="f-nueva">
           <label>Nueva contraseña<input name="nueva" type="password" minlength="8" autocomplete="new-password" required>
@@ -59,8 +59,7 @@ export function renderNuevaContrasena(el, alTerminar) {
     </div>`;
   alEnviar(el.querySelector('#f-nueva'), async ({ nueva }) => {
     await cambiarContrasena(nueva);
-    aviso('Contraseña actualizada.');
-    history.replaceState(null, '', location.pathname);
+    aviso('Contraseña guardada.');
     alTerminar();
   });
 }

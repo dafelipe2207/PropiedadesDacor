@@ -89,3 +89,10 @@ test('el administrador ve todo y gestiona el catálogo', async () => {
   await comoUsuario(db, d.admin, (x) => x.query(`select generar_cobros('2026-11')`));
   assert.equal((await filas(db, d.admin, 'select id from cobros')).length, 4);
 });
+
+test('inquilino no puede ejecutar funciones internas ni generar cobros', async () => {
+  const { db, d } = await preparar();
+  await assert.rejects(comoUsuario(db, d.u1, (x) => x.query('select reaplicar_pagos($1)', [d.c1])), /permission denied/);
+  await assert.rejects(comoUsuario(db, d.u1, (x) => x.query(`select generar_cobros('2026-12')`)), /Solo el administrador/);
+  await comoUsuario(db, d.admin, (x) => x.query(`select generar_cobros('2026-12')`));
+});

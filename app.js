@@ -1,5 +1,5 @@
 // Enrutador principal: sesión → perfil → menú y vista según el rol.
-import { configurado } from './lib/supabaseClient.js';
+import { configurado, tipoEnlace } from './lib/supabaseClient.js';
 import { db } from './lib/cliente.js';
 import { sesionActual, miPerfil, cerrarSesion } from './lib/auth.js';
 import { esc } from './lib/formato.js';
@@ -27,6 +27,8 @@ const RUTA_RECIBO = './vistas/recibo.js';
 const app = document.getElementById('app');
 let contexto = null;
 let escuchando = false;
+// Enlace de correo pendiente: 'invite' o 'recovery' piden crear contraseña antes de entrar.
+let enlacePendiente = tipoEnlace;
 
 async function iniciar() {
   if (!configurado) {
@@ -37,11 +39,26 @@ async function iniciar() {
   if (!escuchando) {
     escuchando = true;
     db().auth.onAuthStateChange((evento) => {
-      if (evento === 'PASSWORD_RECOVERY') renderNuevaContrasena(app, iniciar);
+      if (evento === 'PASSWORD_RECOVERY' && enlacePendiente !== 'recovery') { enlacePendiente = 'recovery'; iniciar(); }
       if (evento === 'SIGNED_OUT') { contexto = null; iniciar(); }
     });
   }
   const sesion = await sesionActual();
+  if (enlacePendiente === 'vencido') {
+    enlacePendiente = null;
+    history.replaceState(null, '', location.pathname);
+    renderIngreso(app, iniciar);
+    error(new Error('El enlace del correo venció o ya fue usado. Pida uno nuevo con «¿Olvidó su contraseña?».'));
+    return;
+  }
+  if (sesion && (enlacePendiente === 'invite' || enlacePendiente === 'recovery')) {
+    renderNuevaContrasena(app, () => {
+      enlacePendiente = null;
+      history.replaceState(null, '', location.pathname);
+      iniciar();
+    }, enlacePendiente);
+    return;
+  }
   if (!sesion) { renderIngreso(app, iniciar); return; }
   try {
     const perfil = await miPerfil(sesion.user.id);

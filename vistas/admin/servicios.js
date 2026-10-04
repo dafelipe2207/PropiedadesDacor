@@ -1,7 +1,7 @@
 import * as S from '../../services/servicios.js';
 import { listarPropiedades, listarUnidades } from '../../services/propiedades.js';
-import { esc, formatoPesos, formatoFecha, nombrePeriodo, periodoActual, TIPOS_SERVICIO } from '../../lib/formato.js';
-import { modal, alEnviar, aviso, opciones, vacio, conCarga, error, confirmar } from '../../lib/ui.js';
+import { esc, formatoPesos, formatoFecha, nombrePeriodo, periodoActual, numeroEnCampo, TIPOS_SERVICIO } from '../../lib/formato.js';
+import { modal, alEnviar, aviso, opciones, vacio, conCarga, error, confirmar, abrirEnPestana } from '../../lib/ui.js';
 
 const estado = { periodo: periodoActual(), propiedad: null };
 
@@ -54,7 +54,7 @@ export async function render(el) {
       <form>
         <label>Unidad<select name="unidad_id" required>${opciones(unidades, null, { texto: 'identificador', vacio: 'Seleccione…' })}</select></label>
         <label>Identificador del subcontador<input name="identificador" placeholder="Ej. número del medidor" required></label>
-        <label>Lectura inicial<input name="lectura_inicial" data-numero inputmode="decimal" value="0" required></label>
+        <label>Lectura inicial<input name="lectura_inicial" data-numero="decimal" inputmode="decimal" value="0" required></label>
         <button type="submit">Guardar</button>
       </form>`);
     alEnviar(m.el.querySelector('form'), async (d) => { await S.crearSubcontador({ ...d, servicio_id: b.dataset.subcontador }); m.cerrar(); aviso('Subcontador agregado.'); recargar(); });
@@ -66,7 +66,7 @@ export async function render(el) {
     const m = modal(`Factura de ${s.nombre} – ${nombrePeriodo(estado.periodo)}`, `
       <form>
         <label>Valor total de la factura (pesos)<input name="valor" data-numero inputmode="numeric" value="${f.valor ?? ''}" required></label>
-        ${s.modalidad === 'compartido' ? `<label>Consumo del medidor principal (${esc(s.medida)})<input name="consumo_principal" data-numero inputmode="decimal" value="${f.consumo_principal ?? ''}" required>
+        ${s.modalidad === 'compartido' ? `<label>Consumo del medidor principal (${esc(s.medida)})<input name="consumo_principal" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(f.consumo_principal)}" required>
           <span class="ayuda">Aparece en la factura de la empresa.</span></label>` : ''}
         <label>Fecha de vencimiento<input name="vencimiento" type="date" value="${f.vencimiento ?? ''}"></label>
         <label>Foto o PDF de la factura<input name="archivo" type="file" accept="image/*,application/pdf"></label>
@@ -109,7 +109,7 @@ export async function render(el) {
   });
 
   el.querySelectorAll('[data-ver-archivo]').forEach((b) => b.onclick = async () => {
-    try { window.open(await S.urlArchivo(b.dataset.verArchivo), '_blank'); } catch (e) { error(e); }
+    abrirEnPestana(() => S.urlArchivo(b.dataset.verArchivo)).catch(error);
   });
 }
 
@@ -152,9 +152,9 @@ function formLecturas(s, ls, cerrada) {
           <tr><td>${esc(l.unidad)}<div class="secundario">${esc(l.identificador)}</div>
               ${cerrada ? '' : `<label class="casilla secundario"><input type="checkbox" name="cambio_${l.subcontador_id}" ${l.cambio_contador ? 'checked' : ''}> Cambio de contador</label>
               <label data-inicial="${l.subcontador_id}" ${l.cambio_contador ? '' : 'hidden'} class="secundario">Lectura inicial del nuevo
-                <input name="inicial_${l.subcontador_id}" data-numero inputmode="decimal" value="${l.lectura_inicial_nuevo ?? ''}"></label>`}</td>
+                <input name="inicial_${l.subcontador_id}" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(l.lectura_inicial_nuevo)}"></label>`}</td>
             <td class="num">${l.cambio_contador ? '—' : l.anterior}</td>
-            <td class="num">${cerrada ? (l.lectura ?? '—') : `<input name="lectura_${l.subcontador_id}" data-numero inputmode="decimal" value="${l.lectura ?? ''}" style="width:6.5rem;text-align:right">`}</td>
+            <td class="num">${cerrada ? (l.lectura ?? '—') : `<input name="lectura_${l.subcontador_id}" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(l.lectura)}" style="width:6.5rem;text-align:right">`}</td>
             <td class="num">${l.consumo ?? '—'}</td></tr>`).join('')}</tbody>
       </table></div>
       ${cerrada ? '' : '<button type="submit" class="boton-chico">Guardar lecturas</button>'}
