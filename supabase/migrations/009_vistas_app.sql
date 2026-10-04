@@ -46,3 +46,35 @@ language sql stable as $$
 $$;
 
 grant select on v_servicios to authenticated;
+
+alter table perfiles add column nombre text;
+
+-- Nombre para mostrar de un usuario (visible para todos los roles, solo el nombre).
+create function nombre_usuario(p_id uuid) returns text
+language sql stable security definer set search_path = public as $$
+  select coalesce((select nombre from perfiles where id = p_id),
+                  case (select rol from perfiles where id = p_id) when 'admin' then 'Administrador' else 'Usuario' end)
+$$;
+
+create view v_cobros with (security_invoker = true) as
+select k.id, k.contrato_id, k.periodo, k.fecha_limite, k.total, k.saldo, k.estado,
+       c.inquilino_id, i.nombre as inquilino, i.telefono,
+       u.identificador as unidad, u.tipo as tipo_unidad, u.propiedad_id, p.nombre as propiedad, p.propietario_id
+from cobros k
+join contratos c on c.id = k.contrato_id
+join inquilinos i on i.id = c.inquilino_id
+join unidades u on u.id = c.unidad_id
+join propiedades p on p.id = u.propiedad_id;
+
+create view v_pagos with (security_invoker = true) as
+select pg.id, pg.numero, pg.contrato_id, pg.fecha, pg.valor, pg.estado, pg.motivo_anulacion, pg.anulado_en, pg.detalle,
+       pg.recibido_por, nombre_usuario(pg.recibido_por) as recibido_por_nombre, pg.creado_en,
+       c.inquilino_id, i.nombre as inquilino, i.telefono,
+       u.identificador as unidad, u.propiedad_id, p.nombre as propiedad, p.propietario_id
+from pagos pg
+join contratos c on c.id = pg.contrato_id
+join inquilinos i on i.id = c.inquilino_id
+join unidades u on u.id = c.unidad_id
+join propiedades p on p.id = u.propiedad_id;
+
+grant select on v_cobros, v_pagos to authenticated;
