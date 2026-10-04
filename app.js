@@ -3,7 +3,7 @@ import { configurado, tipoEnlace } from './lib/supabaseClient.js';
 import { db } from './lib/cliente.js';
 import { sesionActual, miPerfil, cerrarSesion } from './lib/auth.js';
 import { esc } from './lib/formato.js';
-import { error } from './lib/ui.js';
+import { error, modal } from './lib/ui.js';
 import { NOMBRE_APP } from './config.js';
 import { renderIngreso, renderNuevaContrasena } from './vistas/login.js';
 
@@ -72,18 +72,45 @@ async function iniciar() {
   }
 }
 
+// Íconos simples (trazo) para la barra inferior del celular.
+const ICONOS = {
+  inicio: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  cobros: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  pagos: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+  servicios: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+  mas: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+};
+const icono = (n) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONOS[n]}</svg>`;
+// En el celular, el administrador ve estas 4 abajo; el resto va en "Más".
+const PRINCIPALES = ['inicio', 'cobros', 'pagos', 'servicios'];
+
 function pintarMarco() {
   const rutas = RUTAS[contexto.perfil.rol];
+  const varias = rutas.length > 1;
+  const principales = rutas.filter(([r]) => PRINCIPALES.includes(r));
+  const resto = rutas.filter(([r]) => !PRINCIPALES.includes(r));
   app.innerHTML = `
     <header class="barra no-imprimir">
       <div class="barra-fila">
         <span class="barra-titulo">${esc(NOMBRE_APP)}</span>
-        <button type="button" class="boton-icono barra-usuario" id="salir">Salir</button>
+        <button type="button" class="boton-icono barra-usuario" data-salir>Salir</button>
       </div>
-      ${rutas.length > 1 ? `<nav class="menu">${rutas.map(([r, t]) => `<a href="#/${r}" data-ruta="${r}">${esc(t)}</a>`).join('')}</nav>` : ''}
+      ${varias ? `<nav class="menu menu-escritorio">${rutas.map(([r, t]) => `<a href="#/${r}" data-ruta="${r}">${esc(t)}</a>`).join('')}</nav>` : ''}
     </header>
-    <main id="vista"></main>`;
-  app.querySelector('#salir').onclick = cerrarSesion;
+    <main id="vista" class="${varias ? 'con-barra-inferior' : ''}"></main>
+    ${varias ? `
+    <nav class="barra-inferior no-imprimir" aria-label="Menú">
+      ${principales.map(([r, t]) => `<a href="#/${r}" data-ruta="${r}">${icono(r)}<span>${esc(t)}</span></a>`).join('')}
+      <button type="button" data-mas data-ruta-grupo="${resto.map(([r]) => r).join(' ')}">${icono('mas')}<span>Más</span></button>
+    </nav>` : ''}`;
+  app.querySelectorAll('[data-salir]').forEach((b) => { b.onclick = cerrarSesion; });
+  const mas = app.querySelector('[data-mas]');
+  if (mas) mas.onclick = () => {
+    const hoja = modal('Más opciones', `
+      <ul class="lista lista-menu">${resto.map(([r, t]) => `<li><a href="#/${r}" data-cerrar>${esc(t)}<span aria-hidden="true">›</span></a></li>`).join('')}
+        <li><a href="#" data-salir-hoja>Cerrar sesión</a></li></ul>`);
+    hoja.el.querySelector('[data-salir-hoja]').onclick = (ev) => { ev.preventDefault(); hoja.cerrar(); cerrarSesion(); };
+  };
 }
 
 async function mostrarRuta() {
@@ -97,7 +124,9 @@ async function mostrarRuta() {
   } else {
     const encontrada = rutas.find(([r]) => r === ruta) ?? rutas[0];
     modulo = encontrada[2];
-    app.querySelectorAll('.menu a').forEach((a) => a.classList.toggle('activo', a.dataset.ruta === encontrada[0]));
+    app.querySelectorAll('[data-ruta]').forEach((a) => a.classList.toggle('activo', a.dataset.ruta === encontrada[0]));
+    app.querySelector('[data-mas]')?.classList.toggle('activo', app.querySelector('[data-mas]').dataset.rutaGrupo.split(' ').includes(encontrada[0]));
+    window.scrollTo(0, 0);
   }
   vista.innerHTML = '<p class="cargando">Cargando…</p>';
   try {

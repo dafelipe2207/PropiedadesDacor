@@ -128,3 +128,67 @@ button:disabled { opacity: .6; cursor: wait; }
   body, main { background: #fff; padding: 0; }
   .recibo { border: 0; }
 }
+
+/* ---------- Celular primero ---------- */
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+button, .boton { min-height: 44px; }
+.boton-chico { min-height: 38px; }
+.boton-icono { min-height: 0; }
+input, select, textarea { min-height: 44px; font-size: 16px; } /* 16px evita el zoom automático en iPhone */
+input[type=checkbox] { min-height: 0; }
+.barra { padding-top: calc(.75rem + env(safe-area-inset-top)); }
+
+/* Barra inferior (solo celular) */
+.barra-inferior {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--blanco); border-top: 1px solid var(--linea);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -2px 12px rgb(0 0 0 / 6%);
+}
+.barra-inferior a, .barra-inferior button {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+  min-height: 58px; padding: .35rem 0; background: none; border: 0; border-radius: 0;
+  color: var(--suave); font-size: .72rem; font-weight: 500; text-decoration: none;
+}
+.barra-inferior svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.barra-inferior .activo { color: var(--verde); font-weight: 700; }
+.barra-inferior .activo svg { stroke-width: 2.3; }
+main.con-barra-inferior { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+.menu-escritorio { display: none; }
+.aviso { bottom: calc(76px + env(safe-area-inset-bottom)); }
+
+/* Hoja "Más" */
+.lista-menu > li { padding: 0; }
+.lista-menu a { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1rem .25rem; color: var(--tinta); text-decoration: none; font-weight: 500; font-size: 1.05rem; }
+.lista-menu a[data-salir-hoja] { color: var(--rojo); }
+
+/* Formularios en una columna en pantallas angostas */
+@media (max-width: 520px) {
+  .fila { grid-template-columns: 1fr; }
+  .tarjeta-cabecera { align-items: flex-start; }
+  .tarjeta { padding: .9rem; }
+  main { padding: .75rem; }
+  h1 { font-size: 1.3rem; }
+  .acciones > * { flex: 1 1 auto; }
+  .cifra strong { font-size: 1.1rem; }
+}
+
+/* Lecturas como tarjetas */
+.lecturas { display: grid; gap: .6rem; margin-bottom: .75rem; }
+.lectura { border: 1px solid var(--linea); border-radius: 10px; padding: .7rem; display: grid; gap: .5rem; }
+.lectura-cabecera { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; }
+.lectura-numeros { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: .5rem; align-items: end; }
+.lectura-numeros > div { display: grid; gap: .2rem; font-size: .8rem; color: var(--suave); }
+.lectura-numeros strong { font-size: 1rem; color: var(--tinta); font-variant-numeric: tabular-nums; }
+.lectura-numeros input { text-align: right; }
+
+/* Computador / tableta horizontal: menú arriba, sin barra inferior */
+@media (min-width: 900px) {
+  .menu-escritorio { display: flex; }
+  .barra-inferior { display: none; }
+  main.con-barra-inferior { padding-bottom: 1rem; }
+  .aviso { bottom: 1.25rem; }
+}

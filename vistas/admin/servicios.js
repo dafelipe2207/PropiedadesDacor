@@ -144,20 +144,24 @@ function tarjetaServicio(s, f, ls) {
 
 function formLecturas(s, ls, cerrada) {
   if (!ls.length) return '<p class="caja-alerta">Agregue los subcontadores de cada unidad conectada.</p>';
+  const medida = esc(s.medida ?? '');
   return `
-    <form data-lecturas="${s.id}" style="margin-bottom:.75rem">
-      <div class="tabla-desplazable"><table>
-        <thead><tr><th>Unidad</th><th class="num">Anterior</th><th class="num">Actual</th><th class="num">Consumo</th></tr></thead>
-        <tbody>${ls.map((l) => `
-          <tr><td>${esc(l.unidad)}<div class="secundario">${esc(l.identificador)}</div>
-              ${cerrada ? '' : `<label class="casilla secundario"><input type="checkbox" name="cambio_${l.subcontador_id}" ${l.cambio_contador ? 'checked' : ''}> Cambio de contador</label>
-              <label data-inicial="${l.subcontador_id}" ${l.cambio_contador ? '' : 'hidden'} class="secundario">Lectura inicial del nuevo
-                <input name="inicial_${l.subcontador_id}" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(l.lectura_inicial_nuevo)}"></label>`}</td>
-            <td class="num">${l.cambio_contador ? '—' : l.anterior}</td>
-            <td class="num">${cerrada ? (l.lectura ?? '—') : `<input name="lectura_${l.subcontador_id}" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(l.lectura)}" style="width:6.5rem;text-align:right">`}</td>
-            <td class="num">${l.consumo ?? '—'}</td></tr>`).join('')}</tbody>
-      </table></div>
-      ${cerrada ? '' : '<button type="submit" class="boton-chico">Guardar lecturas</button>'}
+    <form data-lecturas="${s.id}">
+      <div class="lecturas">${ls.map((l) => `
+        <div class="lectura">
+          <div class="lectura-cabecera"><strong>${esc(l.unidad)}</strong><span class="secundario">${esc(l.identificador)}</span></div>
+          <div class="lectura-numeros">
+            <div>Anterior<strong>${l.cambio_contador ? '—' : l.anterior}</strong></div>
+            <div>Actual${cerrada ? `<strong>${l.lectura ?? '—'}</strong>`
+              : `<input name="lectura_${l.subcontador_id}" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(l.lectura)}" aria-label="Lectura actual ${esc(l.unidad)}">`}</div>
+            <div style="text-align:right">Consumo<strong>${l.consumo ?? '—'} ${l.consumo === null ? '' : medida}</strong></div>
+          </div>
+          ${cerrada ? '' : `<label class="casilla secundario"><input type="checkbox" name="cambio_${l.subcontador_id}" ${l.cambio_contador ? 'checked' : ''}> Cambiaron el contador este mes</label>
+          <label data-inicial="${l.subcontador_id}" ${l.cambio_contador ? '' : 'hidden'}>Lectura inicial del contador nuevo
+            <input name="inicial_${l.subcontador_id}" data-numero="decimal" inputmode="decimal" value="${numeroEnCampo(l.lectura_inicial_nuevo)}"></label>`}
+        </div>`).join('')}
+      </div>
+      ${cerrada ? '' : '<button type="submit" class="boton-secundario" style="width:100%;margin-bottom:.75rem">Guardar lecturas</button>'}
     </form>`;
 }
 
