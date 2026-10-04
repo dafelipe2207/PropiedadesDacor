@@ -11,6 +11,8 @@ begin
   insert into storage.buckets (id, name, public) values ('soportes', 'soportes', false)
     on conflict (id) do nothing;
 
+  execute 'drop policy if exists soportes_admin on storage.objects';
+  execute 'drop policy if exists soportes_ver on storage.objects';
   execute $p$
     create policy soportes_admin on storage.objects for all to authenticated
       using (bucket_id = 'soportes' and public.es_admin())

@@ -96,3 +96,12 @@ test('inquilino no puede ejecutar funciones internas ni generar cobros', async (
   await assert.rejects(comoUsuario(db, d.u1, (x) => x.query(`select generar_cobros('2026-12')`)), /Solo el administrador/);
   await comoUsuario(db, d.admin, (x) => x.query(`select generar_cobros('2026-12')`));
 });
+
+test('un visitante sin sesión no puede ejecutar funciones', async () => {
+  const { db, d } = await preparar();
+  await db.exec('set role anon');
+  try {
+    await assert.rejects(db.query(`select registrar_pago($1, 1, null, gen_random_uuid())`, [d.c1]), /permission denied/);
+    await assert.rejects(db.query('select es_admin()'), /permission denied/);
+  } finally { await db.exec('reset role'); }
+});
