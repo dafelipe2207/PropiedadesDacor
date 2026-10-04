@@ -51,7 +51,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem; }
 .lista > li { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .7rem 0; border-top: 1px solid var(--linea); }
 .lista > li:first-child { border-top: 0; }
 .lista .principal { font-weight: 600; }
-.lista .secundario { color: var(--suave); font-size: .85rem; }
+.secundario { color: var(--suave); font-size: .85rem; }
 .monto { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; }
 .cifra { background: var(--blanco); border-radius: var(--radio); box-shadow: var(--sombra); padding: .85rem; }

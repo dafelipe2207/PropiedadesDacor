@@ -1,5 +1,6 @@
 // Enrutador principal: sesión → perfil → menú y vista según el rol.
-import { supabase, configurado } from './lib/supabaseClient.js';
+import { configurado } from './lib/supabaseClient.js';
+import { db } from './lib/cliente.js';
 import { sesionActual, miPerfil, cerrarSesion } from './lib/auth.js';
 import { esc } from './lib/formato.js';
 import { error } from './lib/ui.js';
@@ -25,6 +26,7 @@ const RUTA_RECIBO = './vistas/recibo.js';
 
 const app = document.getElementById('app');
 let contexto = null;
+let escuchando = false;
 
 async function iniciar() {
   if (!configurado) {
@@ -32,10 +34,13 @@ async function iniciar() {
       <p class="caja-error">No se pudo conectar: la aplicación aún no tiene configurada la base de datos.</p></div>`;
     return;
   }
-  supabase.auth.onAuthStateChange((evento) => {
-    if (evento === 'PASSWORD_RECOVERY') renderNuevaContrasena(app, iniciar);
-    if (evento === 'SIGNED_OUT') { contexto = null; iniciar(); }
-  });
+  if (!escuchando) {
+    escuchando = true;
+    db().auth.onAuthStateChange((evento) => {
+      if (evento === 'PASSWORD_RECOVERY') renderNuevaContrasena(app, iniciar);
+      if (evento === 'SIGNED_OUT') { contexto = null; iniciar(); }
+    });
+  }
   const sesion = await sesionActual();
   if (!sesion) { renderIngreso(app, iniciar); return; }
   try {

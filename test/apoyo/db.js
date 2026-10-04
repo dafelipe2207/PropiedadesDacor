@@ -8,8 +8,8 @@ const aqui = dirname(fileURLToPath(import.meta.url));
 const raiz = join(aqui, '..', '..');
 const carpetaMigraciones = join(raiz, 'supabase', 'migrations');
 
-export async function nuevaDb() {
-  const db = new PGlite();
+export async function nuevaDb(opciones = {}) {
+  const db = new PGlite(opciones);
   await db.exec(readFileSync(join(aqui, 'auth_simulado.sql'), 'utf8'));
   const archivos = readdirSync(carpetaMigraciones).filter((f) => f.endsWith('.sql')).sort();
   for (const archivo of archivos) {
